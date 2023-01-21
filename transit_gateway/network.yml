@@ -1,0 +1,656 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: secure internet gateway network
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Required Select according to your NW
+        Parameters:
+          - NetworkName
+          - AvailabilityZones
+          - AwsAsn
+      -
+        Label:
+          default: Select accoring to your NW
+        Parameters:
+          - GatewayCider
+          - TGWGatewayLeftSubnetPara
+          - GLBeGatewayLeftSubnetPara
+          - TGWGatewayRightSubnetPara
+          - GLBeGatewayRightSubnetPara
+          - Branch1Cider
+          - PulicBranch1SubnetPara
+          - PrivateBranch1SubnetPara
+          - Branch2Cider
+          - PulicBranch2SubnetPara
+          - PrivateBranch2SubnetPara
+          - ApplicationCider
+          - TGWApp1SubnetPara
+          - PrivateApp1SubnetPara
+          - FGSecurityLeftPrivateInterface
+          - FGSecurityRightPrivateInterface
+
+Parameters: 
+  NetworkName:
+    Description: Network name
+    Type: String
+    Default: tgw
+  
+  AvailabilityZones:
+    Description: select proper az-zones
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+
+  AwsAsn:
+    Description: the ASN number of BGP for AWS. Not set the same CustomerAsn
+    Type: String
+    Default: 65000
+    AllowedPattern: ^64[5-9][0-9][0-9]$|^65[0-5][0-9][0-9]$
+
+# -------- Title Gateway Cider Subnet -------------
+  GatewayCider:
+    Description: Enter the VPC cider of  region
+    Type: String
+    Default: 172.16.0.0/16
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+
+  TGWGatewayLeftSubnetPara:
+    Description: Enter the TGWGatewayLeft Subnet of tokyo region
+    Type: String
+    Default: 172.16.1.0/24
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+  
+  GLBeGatewayLeftSubnetPara:
+    Description: Enter the GLBeGatewayLeft Subnet of tokyo region
+    Type: String
+    Default: 172.16.10.0/24
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+
+  TGWGatewayRightSubnetPara:
+    Description: Enter the TGWGatewayRight Subnet of tokyo region
+    Type: String
+    Default: 172.16.2.0/24
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+  
+  GLBeGatewayRightSubnetPara:
+    Description: Enter the GLBeGatewayRight Subnet of tokyo region
+    Type: String
+    Default: 172.16.20.0/24
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+  
+# -------- Blanch1,2 App Cider Subnet -------------
+  Branch1Cider:
+    Description: Enter the Branch1 cider of  region
+    Type: String
+    Default: 10.1.0.0/16
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+
+  PulicBranch1SubnetPara:
+    Description: Enter the branch1 Subnet of tokyo region
+    Type: String
+    Default: 10.1.1.0/24
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+  
+  PrivateBranch1SubnetPara:
+    Description: Enter the private1 Subnet of tokyo region
+    Type: String
+    Default: 10.1.10.0/24
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+
+  Branch2Cider:
+    Description: Enter the Branch1 cider of  region
+    Type: String
+    Default: 10.2.0.0/16
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+
+  PulicBranch2SubnetPara:
+    Description: Enter the branch2 Subnet of tokyo region
+    Type: String
+    Default: 10.2.1.0/24
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+  
+  PrivateBranch2SubnetPara:
+    Description: Enter the private2 Subnet of tokyo region
+    Type: String
+    Default: 10.2.10.0/24
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+
+  ApplicationCider:
+    Description: Enter the Branch1 cider of  region
+    Type: String
+    Default: 10.3.0.0/16
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+
+  TGWApp1SubnetPara:
+    Description: Enter the App Subnet of tokyo region
+    Type: String
+    Default: 10.3.1.0/24
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+  
+  PrivateApp1SubnetPara:
+    Description: Enter the App Subnet of tokyo region
+    Type: String
+    Default: 10.3.10.0/24
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+/[0-9]+$
+    MaxLength: 18
+    MinLength: 9
+
+  FGSecurityLeftPrivateInterface:
+    Description: the I/F address of the private sbunet
+    Type: String
+    Default: 172.17.10.254
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+$
+    MaxLength: 15
+    MinLength: 7
+
+  FGSecurityRightPrivateInterface:
+    Description: the I/F address of the private sbunet
+    Type: String
+    Default: 172.17.20.254
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+$
+    MaxLength: 15
+    MinLength: 7
+
+Resources:
+# ---------- Gateway -----------
+  GatewayVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref GatewayCider
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-GatewayVPC
+
+  Blanch1VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref Branch1Cider
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Blanch1VPC
+
+  Blanch2VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref Branch2Cider
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Blanch2VPC
+
+  ApplicationVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref ApplicationCider
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-ApplicationVPC
+
+# ---------- Internet Gateway -----------
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-IGW
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref GatewayVPC
+      InternetGatewayId: !Ref IGW
+  
+  ApplicationIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-ApplicationIGW
+
+  AttachGateway2:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref ApplicationVPC
+      InternetGatewayId: !Ref ApplicationIGW
+
+  Blanch1IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Blanch1IGW
+
+  AttachGateway4:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Blanch1VPC
+      InternetGatewayId: !Ref Blanch1IGW
+
+  Blanch2IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Blanch2IGW
+
+  AttachGateway3:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Blanch2VPC
+      InternetGatewayId: !Ref Blanch2IGW
+
+# ---------- Title Transit Gateway -----------
+  TGW:
+    Type: "AWS::EC2::TransitGateway"
+    Properties:
+      Description: TGW
+      AmazonSideAsn: !Ref AwsAsn
+      AutoAcceptSharedAttachments: "disable"
+      DefaultRouteTableAssociation: "enable"
+      DefaultRouteTablePropagation: "enable"
+      DnsSupport: "enable"
+      VpnEcmpSupport: "enable"
+      Tags: 
+        - Key: Name
+          Value: !Sub ${NetworkName}-TGW
+
+  TGWGatewayAttachment: # advertise vpc network
+    Type: "AWS::EC2::TransitGatewayAttachment"
+    Properties:
+      TransitGatewayId: !Ref TGW
+      VpcId: !Ref GatewayVPC
+      SubnetIds: 
+        - !Ref TGWGatewayLeftSubnet
+        - !Ref TGWGatewayRightSubnet
+      Tags: 
+        - Key: Name
+          Value: !Sub ${NetworkName}-TGW-Gatewayvpc-attachment
+
+  TGWApplicationAttachment: # advertise vpc network
+    Type: "AWS::EC2::TransitGatewayAttachment"
+    Properties:
+      TransitGatewayId: !Ref TGW
+      VpcId: !Ref ApplicationVPC
+      SubnetIds: 
+        - !Ref TGWApplicationSubnet
+      Tags: 
+        - Key: Name
+          Value: !Sub ${NetworkName}-TGW-Applicationvpc-attachment
+
+  TGWBlanch2Attachment: # advertise vpc network
+    Type: "AWS::EC2::TransitGatewayAttachment"
+    Properties:
+      TransitGatewayId: !Ref TGW
+      VpcId: !Ref Blanch2VPC
+      SubnetIds: 
+        - !Ref PublicBlanch2Subnet
+      Tags: 
+        - Key: Name
+          Value: !Sub ${NetworkName}-TGW-Blanch2vpc-attachment  
+
+# --------------- Title Subnet ---------------
+# ----- Gateway Left Subnet -----
+  TGWGatewayLeftSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      VpcId: !Ref GatewayVPC
+      CidrBlock: !Ref TGWGatewayLeftSubnetPara
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-TGWGatewayLeftSubnet
+
+# ----- GLBe Left Subnet -----
+  GLBeGatewayLeftSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      VpcId: !Ref GatewayVPC
+      CidrBlock: !Ref GLBeGatewayLeftSubnetPara
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-GLBeGatewayLeftSubnet
+  
+  GLBeGatewayLeftRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref GatewayVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-GLBeGatewayLeftRouteTable
+  
+  GLBeGatewayLeftRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GLBeGatewayLeftRouteTable
+      DestinationCidrBlock: 10.0.0.0/8
+      TransitGatewayId: !Ref TGW
+    DependsOn: TGWGatewayAttachment
+  GLBeGatewayLeftRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GLBeGatewayLeftRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+    DependsOn: AttachGateway
+
+  GLBeGatewayLeftRouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref GLBeGatewayLeftSubnet
+      RouteTableId: !Ref GLBeGatewayLeftRouteTable
+
+# ----- Gateway Right Subnet -----
+  TGWGatewayRightSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      VpcId: !Ref GatewayVPC
+      CidrBlock: !Ref TGWGatewayRightSubnetPara
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-TGWGatewayRightSubnet
+
+# ----- GLBe Right Subnet -----
+  GLBeGatewayRightSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      VpcId: !Ref GatewayVPC
+      CidrBlock: !Ref GLBeGatewayRightSubnetPara
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-GLBeGatewayRightSubnet
+  
+  GLBeGatewayRightRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref GatewayVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-GLBeGatewayRightRouteTable
+  
+  GLBeGatewayRightRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GLBeGatewayRightRouteTable
+      DestinationCidrBlock: 10.0.0.0/8
+      TransitGatewayId: !Ref TGW
+    DependsOn:
+      - TGWGatewayAttachment
+  GLBeGatewayRightRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GLBeGatewayRightRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+    DependsOn:
+      - AttachGateway
+
+  GLBeGatewayRightRouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref GLBeGatewayRightSubnet
+      RouteTableId: !Ref GLBeGatewayRightRouteTable
+
+# ---------- Blanch1 Subnet -----------
+  PublicBlanch1Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      VpcId: !Ref Blanch1VPC
+      CidrBlock: !Ref PulicBranch1SubnetPara
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-PublicBlanch1Subnet
+
+  PrivateBlanch1Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      VpcId: !Ref Blanch1VPC
+      CidrBlock: !Ref PrivateBranch1SubnetPara
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-PrivateBlanch1Subnet
+
+# ---------- Blanch2 Subnet -----------
+  PublicBlanch2Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      VpcId: !Ref Blanch2VPC
+      CidrBlock: !Ref PulicBranch2SubnetPara
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Blanch2Subnet
+
+  PrivateBlanch2Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      VpcId: !Ref Blanch2VPC
+      CidrBlock: !Ref PrivateBranch2SubnetPara
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-PrivateBlanch2Subnet
+
+  Blanch2RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Blanch2VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Blanch2RouteTable
+
+  Blanch2Route:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Blanch2RouteTable
+      DestinationCidrBlock: 172.16.0.0/16
+      TransitGatewayId: !Ref TGW
+    DependsOn:
+      - TGWApplicationAttachment
+  Blanch2Route2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Blanch2RouteTable
+      DestinationCidrBlock: 10.1.0.0/16
+      TransitGatewayId: !Ref TGW
+    DependsOn:
+      - TGWApplicationAttachment
+  Blanch2Route3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Blanch2RouteTable
+      DestinationCidrBlock: 10.3.0.0/16
+      TransitGatewayId: !Ref TGW
+    DependsOn:
+      - TGWApplicationAttachment
+  Blanch2Route4:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Blanch2RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref Blanch2IGW
+    DependsOn:
+      - TGWApplicationAttachment
+
+  Blanch2RouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateBlanch2Subnet
+      RouteTableId: !Ref Blanch2RouteTable
+
+# ---------- Application Subnet -----------
+  TGWApplicationSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      VpcId: !Ref ApplicationVPC
+      CidrBlock: !Ref TGWApp1SubnetPara
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-TGWApplicationSubnet
+  
+  PrivateApplicationSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      VpcId: !Ref ApplicationVPC
+      CidrBlock: !Ref PrivateApp1SubnetPara
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-PrivateApplicationSubnet
+
+  ApplicationRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref ApplicationVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-ApplicationRouteTable
+
+  ApplicationRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref ApplicationRouteTable
+      DestinationCidrBlock: 172.16.0.0/16
+      TransitGatewayId: !Ref TGW
+    DependsOn:
+      - TGWApplicationAttachment
+  ApplicationRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref ApplicationRouteTable
+      DestinationCidrBlock: 10.1.0.0/16
+      TransitGatewayId: !Ref TGW
+    DependsOn:
+      - TGWApplicationAttachment
+  ApplicationRoute3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref ApplicationRouteTable
+      DestinationCidrBlock: 10.2.0.0/16
+      TransitGatewayId: !Ref TGW
+    DependsOn:
+      - TGWApplicationAttachment
+  ApplicationRoute4:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref ApplicationRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref ApplicationIGW
+    DependsOn:
+      - TGWApplicationAttachment
+
+  ApplicationRouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateApplicationSubnet
+      RouteTableId: !Ref ApplicationRouteTable
+
+# -------------------------------------------------------------
+Outputs:
+# ------ TGW ------
+  TGWOutput:
+    Description: Information about Gateway VPC id
+    Value: !Ref TGW
+    Export: 
+      Name: !Sub ${NetworkName}-TGW
+
+# ------ VPC ------
+  GatewayVPCOutput:
+    Description: Information about Gateway VPC id
+    Value: !Ref GatewayVPC
+    Export: 
+      Name: !Sub ${NetworkName}-GatewayVPC
+
+  Blanch1VPCOutput:
+    Description: Information about Blanch1 VPC id
+    Value: !Ref Blanch1VPC
+    Export: 
+      Name: !Sub ${NetworkName}-Blanch1VPC
+
+  Blanch2VPCOutput:
+    Description: Information about Blanch2 VPC id
+    Value: !Ref Blanch2VPC
+    Export: 
+      Name: !Sub ${NetworkName}-Blanch2VPC
+
+  ApplicationVPCOutput:
+    Description: Information about Application VPC id
+    Value: !Ref ApplicationVPC
+    Export: 
+      Name: !Sub ${NetworkName}-ApplicationVPC
+# ------ subnet ------
+  GLBeGatewayLeftSubnet:
+    Description: Information about GLBeGatewayLeftSubnet
+    Value: !Ref GLBeGatewayLeftSubnet
+    Export: 
+      Name: !Sub ${NetworkName}-GLBeGatewayLeftSubnet
+
+  GLBeGatewayRightSubnet:
+    Description: Information about GLBeGatewayRightSubnet
+    Value: !Ref GLBeGatewayRightSubnet
+    Export: 
+      Name: !Sub ${NetworkName}-GLBeGatewayRightSubnet
+
+  PublicBlanch1Subnet:
+    Description: Information about PublicBlanch1Subnet
+    Value: !Ref PublicBlanch1Subnet
+    Export: 
+      Name: !Sub ${NetworkName}-PublicBlanch1Subnet
+
+  PrivateBlanch1Subnet:
+    Description: Information about PrivateBlanch1Subnet
+    Value: !Ref PrivateBlanch1Subnet
+    Export: 
+      Name: !Sub ${NetworkName}-PrivateBlanch1Subnet
+
+  PublicBlanch2Subnet:
+    Description: Information about PublicBlanch2Subnet
+    Value: !Ref PublicBlanch2Subnet
+    Export: 
+      Name: !Sub ${NetworkName}-PublicBlanch2Subnet
+
+  PrivateBlanch2Subnet:
+    Description: Information about PrivateBlanch2Subnet
+    Value: !Ref PrivateBlanch2Subnet
+    Export: 
+      Name: !Sub ${NetworkName}-PrivateBlanch2Subnet
+
+  PrivateApplicationSubnet:
+    Description: Information about PrivateApplicationSubnet
+    Value: !Ref PrivateApplicationSubnet
+    Export: 
+      Name: !Sub ${NetworkName}-PrivateApplicationSubnet

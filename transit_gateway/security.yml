@@ -1,0 +1,157 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: secure internet gateway security
+
+Parameters: 
+  NetworkName:
+    Description: Network name
+    Type: String
+    Default: tgw
+
+Resources: 
+# --------- Title Gateway VPC ----------
+# --------- Title syslog Gloup -----------
+  SyslogLeftSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${NetworkName}-SyslogLeft-SG
+      GroupDescription: sig-network
+      VpcId: !ImportValue
+        Fn::Sub: ${NetworkName}-GatewayVPC
+      SecurityGroupIngress:
+        - 
+          CidrIp: "0.0.0.0/0"
+          IpProtocol: -1
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-SyslogLeft-SG
+
+  SyslogRightSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${NetworkName}-SyslogRight-SG
+      GroupDescription: sig-network
+      VpcId: !ImportValue
+        Fn::Sub: ${NetworkName}-GatewayVPC
+      SecurityGroupIngress:
+        - 
+          CidrIp: "0.0.0.0/0"
+          IpProtocol: -1
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-SyslogRight-SG
+
+# --------- Title Blanch1 security Gloup -----------
+  FgSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${NetworkName}-FG-blanch1-SG
+      GroupDescription: sig-network
+      VpcId: !ImportValue
+        Fn::Sub: ${NetworkName}-Blanch1VPC
+      SecurityGroupIngress:
+        - 
+          CidrIp: "0.0.0.0/0"
+          IpProtocol: -1
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-FG-blanch1-SG
+
+  SvSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${NetworkName}-Server-blanch1-SG
+      GroupDescription: sig-network
+      VpcId: !ImportValue
+        Fn::Sub: ${NetworkName}-Blanch1VPC
+      SecurityGroupIngress:
+        - 
+          CidrIp: "0.0.0.0/0"
+          IpProtocol: -1
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Server-blanch1-SG
+
+# --------- Title Blanch2 security Gloup -----------
+  Fg2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${NetworkName}-FG-blanch2-SG
+      GroupDescription: sig-network
+      VpcId: !ImportValue
+        Fn::Sub: ${NetworkName}-Blanch2VPC
+      SecurityGroupIngress:
+        - 
+          CidrIp: "0.0.0.0/0"
+          IpProtocol: -1
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-FG-blanch2-SG
+
+  Sv2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${NetworkName}-Server-blanch2-SG
+      GroupDescription: sig-network
+      VpcId: !ImportValue
+        Fn::Sub: ${NetworkName}-Blanch2VPC
+      SecurityGroupIngress:
+        - 
+          CidrIp: "0.0.0.0/0"
+          IpProtocol: -1
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Server-blanch2-SG
+
+# --------- Title Application security Gloup -----------
+  ApplicationSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${NetworkName}-Application-SG
+      GroupDescription: sig-network
+      VpcId: !ImportValue
+        Fn::Sub: ${NetworkName}-ApplicationVPC
+      SecurityGroupIngress:
+        - 
+          CidrIp: "0.0.0.0/0"
+          IpProtocol: -1
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Application-SG
+
+Outputs:
+  SyslogLeftSGOutput:
+    Description: Information about the value
+    Value: !Ref SyslogLeftSG
+    Export: 
+      Name: !Sub ${NetworkName}-SyslogLeftSG
+  SyslogRightSGOutput:
+    Description: Information about the value
+    Value: !Ref SyslogRightSG
+    Export: 
+      Name: !Sub ${NetworkName}-SyslogRightSG
+  FgSGOutput:
+    Description: Information about the value
+    Value: !Ref FgSG
+    Export: 
+      Name: !Sub ${NetworkName}-FgSG
+  SvSGOutput:
+    Description: Information about the value
+    Value: !Ref SvSG
+    Export: 
+      Name: !Sub ${NetworkName}-SvSG
+  Fg2SGOutput:
+    Description: Information about the value
+    Value: !Ref Fg2SG
+    Export: 
+      Name: !Sub ${NetworkName}-Fg2SG
+  Sv2SGOutput:
+    Description: Information about the value
+    Value: !Ref Sv2SG
+    Export: 
+      Name: !Sub ${NetworkName}-Sv2SG
+  ApplicationSGOutput:
+    Description: Information about the value
+    Value: !Ref ApplicationSG
+    Export: 
+      Name: !Sub ${NetworkName}-ApplicationSG
+  

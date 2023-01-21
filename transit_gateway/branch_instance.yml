@@ -1,0 +1,307 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: secure internet gateway branch instance
+#Metadata: 
+
+Parameters: 
+  NetworkName:
+    Description: Network name
+    Type: String
+    Default: tgw
+
+  KeyName:
+    Description: Key name
+    Type: String
+    Default: tokyoregion2
+
+  Env:
+    Description: select environment
+    Type: String
+    AllowedValues:
+      - dev
+      - prd
+    Default: dev 
+
+  Branch1Asn:
+    Description: the ASN number of BGP for Customer. Not set the same AwsAsn
+    Type: String
+    Default: 65001
+    AllowedPattern: ^64[5-9][0-9][0-9]$|^65[0-5][0-9][0-9]$
+
+  FGBranch1PublicInterface:
+    Description: the I/F address of the Public sbunet
+    Type: String
+    Default: 10.1.1.10
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+$
+    MaxLength: 15
+    MinLength: 7
+
+  FGBranch1PrivateInterface:
+    Description: the I/F address of the private sbunet
+    Type: String
+    Default: 10.1.10.254
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+$
+    MaxLength: 15
+    MinLength: 7
+
+  WindowsBranch1PrivateInterface:
+    Description: the I/F address of the private sbunet
+    Type: String
+    Default: 10.1.10.10
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+$
+    MaxLength: 15
+    MinLength: 7
+
+  WindowsBranch2PrivateInterface:
+    Description: the I/F address of the private sbunet
+    Type: String
+    Default: 10.2.10.10
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+$
+    MaxLength: 15
+    MinLength: 7
+
+  LinuxPrivateInterface:
+    Description: the I/F address of the private sbunet
+    Type: String
+    Default: 10.3.10.10
+    AllowedPattern: ^([0-9]+\.){3}[0-9]+$
+    MaxLength: 15
+    MinLength: 7
+
+  FGInstanceType:
+    Description: Fortigate instance type to use for your instances.
+    Type: String
+    AllowedValues:
+      - t2.micro # min linux default
+      - t2.small # min fg default
+      - t2.medium
+      - t3.micro
+      - t3.small
+      - t3.medium
+    Default: t2.small
+
+  windowsInstanceType:
+    Description: Windows SV instance type to use for your instances.
+    Type: String
+    AllowedValues:
+      - t2.micro # min linux default
+      - t2.small # min fg default
+      - t2.medium
+      - t3.micro
+      - t3.small
+      - t3.medium
+    Default: t2.micro
+
+  linuxInstanceType:
+    Description: linux instance type to use for your instances.
+    Type: String
+    AllowedValues:
+      - t2.micro # min linux default
+      - t2.small # min fg default
+      - t2.medium
+      - t3.micro
+      - t3.small
+      - t3.medium
+    Default: t2.micro
+
+Mappings: 
+  AmiWindowsMap:
+    ap-northeast-1: # tokyo
+      ami: ami-099772c3838a3bec1
+    ap-northeast-2: # seoul
+      ami: ami-0fa3c8ea5e496c95e
+  AmiFGMap:
+    ap-northeast-1: # tokyo
+      ami: ami-044ad1e9a0655822c
+    ap-northeast-3: # osaka
+      ami: ami-07277a4b7cd874be0
+    ap-northeast-2: # seoul
+      ami: ami-0f000a360718ed040
+  AmiAmazonLinuxMap:
+    ap-northeast-1: # tokyo
+      ami: ami-0bba69335379e17f8
+    ap-northeast-3: # osaka
+      ami: ami-0e0cbf0f03ba99ee7
+    ap-northeast-2: # seoul
+      ami: ami-0eddbd81024d3fbdd
+
+Conditions:
+  IsProduction: !Equals
+    - !Ref Env
+    - prd
+
+Resources: 
+# ------- Cusotomer-Gateway -------
+  FGCustomerGateway:
+    Type: "AWS::EC2::CustomerGateway"
+    Properties:
+      BgpAsn: !Ref Branch1Asn
+      IpAddress: !Ref FGBranch1Eip
+      Type: "ipsec.1"
+      Tags: 
+        - Key: Name
+          Value: !Sub ${NetworkName}-Customer-Gateway
+    Condition: IsProduction
+
+  SiteToVpn:
+    Type: "AWS::EC2::VPNConnection"
+    Properties:
+      Type: "ipsec.1"
+      StaticRoutesOnly: false
+      CustomerGatewayId: !Ref FGCustomerGateway
+      TransitGatewayId: !ImportValue 
+        Fn::Sub: ${NetworkName}-TGW
+      # VpnGatewayId: vgw-xxxxxxx
+      # VpnTunnelOptionsSpecifications: 
+        # - TunnelInsideCidr: 169.254.173.148/30
+          # PreSharedKey: *****
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-SiteToVPN
+    Condition: IsProduction
+
+# ------- FG Branch1 Instance -------
+  FGBranch1Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap [AmiFGMap, !Ref AWS::Region, ami]
+      InstanceType: !Ref FGInstanceType
+      Monitoring: false
+      SourceDestCheck: false
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: False
+          DeviceIndex: 0
+          Description: public interface of Fortiate
+          PrivateIpAddress: !Ref FGBranch1PublicInterface
+          GroupSet:
+            - !ImportValue
+              Fn::Sub: ${NetworkName}-FgSG
+          SubnetId: !ImportValue
+              Fn::Sub: ${NetworkName}-PublicBlanch1Subnet
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Fortigate-Blanch1-Instance
+    Condition: IsProduction
+    
+  FGBranch1Eip:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: !ImportValue
+        Fn::Sub: ${NetworkName}-Blanch1VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-FGBranch1-Eip
+    Condition: IsProduction
+  
+  FGBranch1EipAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt FGBranch1Eip.AllocationId
+      InstanceId: !Ref FGBranch1Instance
+      # NetworkInterfaceId:
+    Condition: IsProduction
+
+  FGBranch1NetworkInterface1:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: NW I/F for FG branch1 private subnet
+      PrivateIpAddress: !Ref FGBranch1PrivateInterface
+      SubnetId: !ImportValue
+        Fn::Sub: ${NetworkName}-PrivateBlanch1Subnet
+      SourceDestCheck: False
+      GroupSet:
+        - !ImportValue
+          Fn::Sub: ${NetworkName}-FgSG
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-FGBranch1-NetworkInterface1
+    Condition: IsProduction
+
+  NetworkInterfaceAttachment1:
+    Type: AWS::EC2::NetworkInterfaceAttachment
+    DependsOn:
+      - FGBranch1EipAssociation
+    Properties:
+      NetworkInterfaceId: !Ref FGBranch1NetworkInterface1
+      DeviceIndex: 1
+      InstanceId: !Ref FGBranch1Instance
+      DeleteOnTermination: False
+    Condition: IsProduction
+
+# ------- Windows Branch1 Instance -------
+  WindowsBranch1Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap [AmiWindowsMap, !Ref AWS::Region, ami]
+      InstanceType: !Ref windowsInstanceType
+      Monitoring: false
+      SourceDestCheck: false
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: False
+          DeviceIndex: 0
+          Description: private interface of Windows
+          PrivateIpAddress: !Ref WindowsBranch1PrivateInterface
+          GroupSet:
+            - !ImportValue
+              Fn::Sub: ${NetworkName}-SvSG
+          SubnetId: !ImportValue
+              Fn::Sub: ${NetworkName}-PrivateBlanch1Subnet
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Windows-Blanch1-Instance
+    Condition: IsProduction
+
+# ------- Windows Branch2 Instance -------
+  LinuxInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap [AmiAmazonLinuxMap, !Ref AWS::Region, ami]
+      InstanceType: !Ref linuxInstanceType
+      Monitoring: false
+      SourceDestCheck: false
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: True
+          DeviceIndex: 0
+          Description: private interface of Linux
+          PrivateIpAddress: !Ref WindowsBranch2PrivateInterface
+          GroupSet:
+            - !ImportValue
+              Fn::Sub: ${NetworkName}-Sv2SG
+          SubnetId: !ImportValue
+              Fn::Sub: ${NetworkName}-PrivateBlanch2Subnet
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Linux-Blanch2-Instance
+
+# ------- Linux app. Instance -------
+  LinuxInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap [AmiAmazonLinuxMap, !Ref AWS::Region, ami]
+      InstanceType: !Ref linuxInstanceType
+      Monitoring: false
+      SourceDestCheck: false
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: True
+          DeviceIndex: 0
+          Description: private interface of Linux
+          PrivateIpAddress: !Ref LinuxPrivateInterface
+          GroupSet:
+            - !ImportValue
+              Fn::Sub: ${NetworkName}-ApplicationSG
+          SubnetId: !ImportValue
+              Fn::Sub: ${NetworkName}-PrivateApplicationSubnet
+      Tags:
+        - Key: Name
+          Value: !Sub ${NetworkName}-Linux-App1-Instance
+
+Outputs:
+  FGBranch1PublicIPOutput:
+    Description: Information about the value
+    Value: !Ref FGBranch1Eip
+    Export: 
+      Name: !Sub ${NetworkName}-FGBranch1-EIP
+    Condition: IsProduction
